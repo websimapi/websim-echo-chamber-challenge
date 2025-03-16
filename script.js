@@ -137,10 +137,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${sender}-message`;
 
-        // Create sender label
+        // Create sender label with icon
         const senderLabel = document.createElement('div');
         senderLabel.className = 'sender-label';
-        senderLabel.textContent = sender === 'user' ? 'You:' : 'LLM:';
+        senderLabel.innerHTML = sender === 'user' ? '👤 You:' : '🤖 LLM:';
         messageDiv.appendChild(senderLabel);
 
         // Create message content with pre-formatting
@@ -151,16 +151,33 @@ document.addEventListener('DOMContentLoaded', () => {
         messageContent.textContent = message;
         messageDiv.appendChild(messageContent);
 
+        // Add message with animation
+        messageDiv.style.opacity = '0';
         chatMessages.appendChild(messageDiv);
+        
+        // Trigger reflow for animation
+        void messageDiv.offsetWidth;
+        messageDiv.style.opacity = '1';
+        messageDiv.style.transition = 'opacity 0.3s ease-in-out';
+        
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
     async function retryLLMRequest(userMessage) {
-        // Show loading indicator
+        // Show loading indicator with animation
         const loadingDiv = document.createElement('div');
         loadingDiv.className = 'message llm-message';
-        loadingDiv.textContent = 'Retrying...';
+        loadingDiv.innerHTML = '<div class="sender-label">🤖 LLM:</div><div style="display: flex; align-items: center;"><span>Retrying</span><span class="loading-dots">...</span></div>';
         chatMessages.appendChild(loadingDiv);
+        
+        // Animate the loading dots
+        const loadingDots = loadingDiv.querySelector('.loading-dots');
+        let dotCount = 0;
+        const dotAnimation = setInterval(() => {
+            dotCount = (dotCount + 1) % 4;
+            loadingDots.textContent = '.'.repeat(dotCount);
+        }, 300);
+        
         chatMessages.scrollTop = chatMessages.scrollHeight;
         
         try {
@@ -172,6 +189,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 ]
             });
 
+            // Clear dot animation
+            clearInterval(dotAnimation);
+            
             // Remove loading indicator
             chatMessages.removeChild(loadingDiv);
 
@@ -187,14 +207,17 @@ document.addEventListener('DOMContentLoaded', () => {
             checkEcho(userMessage, llmResponse);
 
         } catch (error) {
+            // Clear dot animation
+            clearInterval(dotAnimation);
+            
             // Remove loading indicator
             chatMessages.removeChild(loadingDiv);
             console.error('Error:', error);
 
-            // Create retry countdown message
+            // Create retry countdown message with enhanced styling
             const errorDiv = document.createElement('div');
             errorDiv.className = 'message llm-message';
-            errorDiv.innerHTML = `Error communicating with the LLM. <span class="retry-countdown">Retrying in 7...</span>`;
+            errorDiv.innerHTML = `<div class="sender-label">🤖 LLM:</div><div>Error communicating with the LLM. <span class="retry-countdown">Retrying in 7...</span></div>`;
             errorDiv.style.cursor = 'pointer';
             chatMessages.appendChild(errorDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -237,13 +260,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // LLM succeeded
             llmScore++;
             llmScoreElement.textContent = llmScore;
-            resultDiv.textContent = ' The LLM echoed correctly! LLM gets a point.';
+            resultDiv.innerHTML = '✅ The LLM echoed correctly! LLM gets a point.';
             resultDiv.classList.add('success');
         } else {
             // LLM failed
             userScore++;
             userScoreElement.textContent = userScore;
-            resultDiv.textContent = ' The LLM failed to echo correctly! You get a point.';
+            resultDiv.innerHTML = '❌ The LLM failed to echo correctly! You get a point.';
             resultDiv.classList.add('failure');
 
             // Create diff log in separate container
@@ -535,7 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Create toggle button
         const toggleButton = document.createElement('button');
         toggleButton.className = 'gallery-toggle';
-        toggleButton.textContent = 'Show';
+        toggleButton.innerHTML = '👁️ Show';
         galleryTitle.appendChild(toggleButton);
         
         // Create blur overlay
@@ -544,7 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const blurMessage = document.createElement('div');
         blurMessage.className = 'gallery-blur-message';
-        blurMessage.textContent = 'Click anywhere to view winning strategies';
+        blurMessage.textContent = 'Click to view winning strategies';
         
         blurOverlay.appendChild(blurMessage);
         galleryItems.parentElement.appendChild(blurOverlay);
@@ -559,10 +582,20 @@ document.addEventListener('DOMContentLoaded', () => {
         function toggleGallery() {
             if (blurOverlay.style.display === 'none') {
                 blurOverlay.style.display = 'flex';
-                toggleButton.textContent = 'Show';
+                toggleButton.innerHTML = '👁️ Show';
+                
+                // Animation for appearing
+                blurOverlay.style.opacity = '0';
+                setTimeout(() => {
+                    blurOverlay.style.opacity = '1';
+                }, 10);
             } else {
-                blurOverlay.style.display = 'none';
-                toggleButton.textContent = 'Hide';
+                // Animation for disappearing
+                blurOverlay.style.opacity = '0';
+                setTimeout(() => {
+                    blurOverlay.style.display = 'none';
+                    toggleButton.innerHTML = '🔍 Hide';
+                }, 300);
             }
         }
     }
