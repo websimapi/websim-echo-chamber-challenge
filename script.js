@@ -35,8 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!userMessage) return;
         
         // Check if message exceeds character limit
-        if (userMessage.length > 2000) {
-            alert('Message exceeds the maximum limit of 2,000 characters.');
+        if (userMessage.length > 500) {
+            alert('Message exceeds the maximum limit of 500 characters.');
             return;
         }
         
@@ -130,8 +130,11 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('User message:', JSON.stringify(userMessage));
         console.log('LLM response:', JSON.stringify(llmResponse));
         
-        // Compare without trimming to preserve all characters exactly as they are
-        if (userMessage === llmResponse) {
+        // Trim both strings to handle potential whitespace issues
+        const trimmedUserMessage = userMessage.trim();
+        const trimmedLLMResponse = llmResponse.trim();
+        
+        if (trimmedUserMessage === trimmedLLMResponse) {
             // LLM succeeded
             llmScore++;
             llmScoreElement.textContent = llmScore;
@@ -145,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
             resultDiv.classList.add('failure');
             
             // Create diff log in separate container
-            displayDiffLog(userMessage, llmResponse);
+            displayDiffLog(trimmedUserMessage, trimmedLLMResponse);
         }
         
         chatMessages.appendChild(resultDiv);
