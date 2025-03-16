@@ -467,6 +467,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            // Check if exact duplicate exists in the database
+            const existingEntries = await room.collection('gallery_items').query({ message: userMessage }).fetch();
+            if (existingEntries.length > 0) {
+                const warningDiv = document.createElement('div');
+                warningDiv.className = 'result';
+                warningDiv.textContent = 'This exact winning input already exists in the gallery!';
+                warningDiv.style.backgroundColor = '#fff3cd';
+                warningDiv.style.color = '#856404';
+                chatMessages.appendChild(warningDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                return;
+            }
+
             // Store in local storage
             localWinningInputs.push(userMessage);
             localStorage.setItem('winningInputs', JSON.stringify(localWinningInputs));
