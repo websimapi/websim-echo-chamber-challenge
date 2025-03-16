@@ -14,16 +14,25 @@ document.addEventListener('DOMContentLoaded', () => {
     let llmScore = 0;
     let conversationHistory = [];
     let localWinningInputs = JSON.parse(localStorage.getItem('winningInputs') || '[]');
+    let hardMode = false; // Default is normal mode
 
     // Load gallery items on page load
     loadGalleryItems();
 
     // Setup gallery toggle
     setupGalleryToggle();
+    
+    // Setup mode toggle
+    setupModeToggle();
 
     // Update character count
     userInput.addEventListener('input', () => {
         charCount.textContent = userInput.value.length;
+        
+        // If in hard mode, restrict to only a-z and space
+        if (hardMode) {
+            userInput.value = userInput.value.replace(/[^a-z ]/g, '');
+        }
     });
 
     // Initial system prompt for the LLM
@@ -48,6 +57,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Check if message exceeds character limit
         if (userMessage.length > 500) {
             alert('Message exceeds the maximum limit of 500 characters.');
+            return;
+        }
+
+        // In hard mode, additional validation
+        if (hardMode && /[^a-z ]/g.test(userMessage)) {
+            alert('Hard mode only allows lowercase a-z letters and spaces.');
             return;
         }
 
@@ -491,7 +506,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Check if exact duplicate exists in the database
-            const existingEntries = await room.collection('gallery_items').query({ message: userMessage }).fetch();
+            const collectionName = hardMode ? 'gallery_items_hard' : 'gallery_items';
+            const existingEntries = await room.collection(collectionName).query({ message: userMessage }).fetch();
             if (existingEntries.length > 0) {
                 const warningDiv = document.createElement('div');
                 warningDiv.className = 'result';
@@ -508,9 +524,10 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('winningInputs', JSON.stringify(localWinningInputs));
 
             // Add to database
-            await room.collection('gallery_items').create({
+            await room.collection(collectionName).create({
                 message: userMessage,
-                diffAnalysis: diffAnalysis
+                diffAnalysis: diffAnalysis,
+                mode: hardMode ? 'hard' : 'normal'
             });
         } catch (error) {
             console.error('Error adding to gallery:', error);
@@ -544,8 +561,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Load gallery items from database
-    function loadGalleryItems() {
-        room.collection('gallery_items').subscribe(function (items) {
+    function loadGalleryItems(mode = 'normal') {
+        const collectionName = mode === 'hard' ? 'gallery_items_hard' : 'gallery_items';
+        room.collection(collectionName).subscribe(function (items) {
             renderGalleryItems(items);
         });
     }
@@ -554,6 +572,32 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupGalleryToggle() {
         const galleryTitle = document.querySelector('.gallery-container h3');
         const galleryContainer = document.querySelector('.gallery-container');
+        
+        // Create tabs for normal and hard mode
+        const tabsContainer = document.createElement('div');
+        tabsContainer.className = 'gallery-tabs';
+        
+        const normalTab = document.createElement('div');
+        normalTab.className = 'gallery-tab active';
+        normalTab.textContent = 'Normal Mode';
+        normalTab.addEventListener('click', () => {
+            normalTab.classList.add('active');
+            hardTab.classList.remove('active');
+            loadGalleryItems('normal');
+        });
+        
+        const hardTab = document.createElement('div');
+        hardTab.className = 'gallery-tab';
+        hardTab.textContent = 'Hard Mode';
+        hardTab.addEventListener('click', () => {
+            hardTab.classList.add('active');
+            normalTab.classList.remove('active');
+            loadGalleryItems('hard');
+        });
+        
+        tabsContainer.appendChild(normalTab);
+        tabsContainer.appendChild(hardTab);
+        galleryContainer.insertBefore(tabsContainer, galleryItems.parentElement);
         
         // Create toggle button
         const toggleButton = document.createElement('button');
@@ -597,6 +641,52 @@ document.addEventListener('DOMContentLoaded', () => {
                     toggleButton.innerHTML = '🔍 Hide';
                 }, 300);
             }
+        }
+    }
+    
+    // Setup mode toggle
+    function setupModeToggle() {
+        // Create mode toggle container
+        const modeToggle = document.createElement('div');
+        modeToggle.className = 'mode-toggle';
+        
+        // Normal mode button
+        const normalModeBtn = document.createElement('button');
+        normalModeBtn.className = 'mode-button active';
+        normalModeBtn.textContent = 'Normal Mode';
+        normalModeBtn.addEventListener('click', () => switchMode('normal'));
+        
+        // Hard mode button
+        const hardModeBtn = document.createElement('button');
+        hardModeBtn.className = 'mode-button';
+        hardModeBtn.textContent = 'Hard Mode';
+        hardModeBtn.addEventListener('click', () => switchMode('hard'));
+        
+        // Add buttons to toggle
+        modeToggle.appendChild(normalModeBtn);
+        modeToggle.appendChild(hardModeBtn);
+        
+        // Add toggle to container
+        document.querySelector('.container').appendChild(modeToggle);
+        
+        // Function to switch modes
+        function switchMode(mode) {
+            hardMode = mode === 'hard';
+            
+            if (hardMode) {
+                normalModeBtn.classList.remove('active');
+                hardModeBtn.classList.add('active');
+                userInput.placeholder = "Hard mode: only a-z and spaces allowed";
+                // Clear input when switching to hard mode
+                userInput.value = userInput.value.replace(/[^a-z ]/g, '');
+            } else {
+                hardModeBtn.classList.remove('active');
+                normalModeBtn.classList.add('active');
+                userInput.placeholder = "Type your message here...";
+            }
+            
+            // Update character counter
+            charCount.textContent = userInput.value.length;
         }
     }
 

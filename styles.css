@@ -52,6 +52,35 @@ h1::after {
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
 }
 
+.mode-toggle {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    background: linear-gradient(145deg, #f9f9f9, #f0f0f0);
+    border-radius: 25px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    border: 1px solid #e0e0e0;
+}
+
+.mode-button {
+    padding: 8px 15px;
+    cursor: pointer;
+    font-weight: bold;
+    color: #555;
+    transition: all 0.3s;
+    border: none;
+    background: transparent;
+}
+
+.mode-button.active {
+    background: linear-gradient(45deg, #4caf50, #2196f3);
+    color: white;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
 .score {
     font-size: 1.3rem;
     font-weight: bold;
@@ -356,6 +385,30 @@ h1::after {
 .gallery-container h3::before {
     content: '🏆';
     font-size: 1.5rem;
+}
+
+.gallery-tabs {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    gap: 10px;
+}
+
+.gallery-tab {
+    padding: 8px 20px;
+    background: linear-gradient(145deg, #f9f9f9, #f0f0f0);
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s;
+    border: 1px solid #e0e0e0;
+    color: #555;
+}
+
+.gallery-tab.active {
+    background: linear-gradient(45deg, #4caf50, #2196f3);
+    color: white;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
 }
 
 .gallery-toggle {
