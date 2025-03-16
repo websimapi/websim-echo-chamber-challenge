@@ -35,8 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!userMessage) return;
         
         // Check if message exceeds character limit
-        if (userMessage.length > 32000) {
-            alert('Message exceeds the maximum limit of 32,000 characters.');
+        if (userMessage.length > 16000) {
+            alert('Message exceeds the maximum limit of 16,000 characters.');
             return;
         }
         

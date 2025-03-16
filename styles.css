@@ -106,7 +106,7 @@ h1 {
     border-radius: 5px;
     resize: none;
     height: 60px;
-    max-length: 32000;
+    max-length: 16000;
 }
 
 .char-counter {
