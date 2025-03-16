@@ -491,6 +491,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Load gallery items from database
+    function loadGalleryItems(mode = 'normal') {
+        const collectionName = mode === 'hard' ? 'gallery_items_hard' : 'gallery_items';
+        room.collection(collectionName).subscribe(function (items) {
+            renderGalleryItems(items);
+        });
+    }
+
     // Add winning entry to gallery database
     async function addToGallery(userMessage, diffAnalysis) {
         try {
@@ -508,7 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Check if exact duplicate exists in the database
             const collectionName = hardMode ? 'gallery_items_hard' : 'gallery_items';
-            const existingEntries = await room.collection(collectionName).query({ message: userMessage }).fetch();
+            const existingEntries = await room.collection(collectionName).filter({ message: userMessage }).getList();
             if (existingEntries.length > 0) {
                 const warningDiv = document.createElement('div');
                 warningDiv.className = 'result';
@@ -558,14 +566,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             return matchCount / shorterString.length > 0.8;
-        });
-    }
-
-    // Load gallery items from database
-    function loadGalleryItems(mode = 'normal') {
-        const collectionName = mode === 'hard' ? 'gallery_items_hard' : 'gallery_items';
-        room.collection(collectionName).subscribe(function (items) {
-            renderGalleryItems(items);
         });
     }
 
