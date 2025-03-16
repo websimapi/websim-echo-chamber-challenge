@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let userScore = 0;
     let llmScore = 0;
     let conversationHistory = [];
+    let lastDiffAnalysis = null; // Store the last diff analysis
     
     // Update character count
     userInput.addEventListener('input', () => {
@@ -42,6 +43,21 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Display user message
         displayMessage(userMessage, 'user');
+
+        let messages = [
+            systemPrompt,
+            ...conversationHistory
+        ];
+
+        // Add learning context if there was a previous failure
+        if (lastDiffAnalysis) {
+            messages.splice(1, 0, {
+                role: "system",
+                content: `Previous echo failure analysis: ${lastDiffAnalysis}. Please ensure you copy EXACTLY as instructed.`
+            });
+            // Reset the lastDiffAnalysis after using it
+            lastDiffAnalysis = null;
+        }
         
         // Add user message to history
         const newMessage = {
@@ -66,10 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Send to LLM
             const completion = await websim.chat.completions.create({
-                messages: [
-                    systemPrompt,
-                    ...conversationHistory
-                ]
+                messages: messages
             });
             
             // Remove loading indicator
@@ -149,6 +162,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Create diff log in separate container
             displayDiffLog(trimmedUserMessage, trimmedLLMResponse);
+            
+            // Save diff analysis for next LLM call
+            lastDiffAnalysis = generateLLMFriendlyDiffSummary(trimmedUserMessage, trimmedLLMResponse);
         }
         
         chatMessages.appendChild(resultDiv);
@@ -334,5 +350,85 @@ document.addEventListener('DOMContentLoaded', () => {
         return str.replace(/[^\x20-\x7E]/g, char => {
             return `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`;
         });
+    }
+
+    // Function to generate a concise summary for the LLM
+    function generateLLMFriendlyDiffSummary(expected, actual) {
+        let summary = `Expected length: ${expected.length}, Actual length: ${actual.length}. `;
+
+        // Find chunks of differences
+        let diffs = [];
+        let i = 0;
+        let diffStart = -1;
+        
+        // Find all differences
+        while (i < Math.max(expected.length, actual.length)) {
+            if ((i >= expected.length && i < actual.length) || 
+                (i >= actual.length && i < expected.length) || 
+                (expected[i] !== actual[i])) {
+                
+                if (diffStart === -1) diffStart = i;
+            } else if (diffStart !== -1) {
+                // End of a difference chunk
+                diffs.push({
+                    start: diffStart,
+                    end: i,
+                    expectedChunk: expected.substring(diffStart, i),
+                    actualChunk: actual.substring(diffStart, i)
+                });
+                diffStart = -1;
+            }
+            i++;
+        }
+        
+        // Add the last diff if there is one
+        if (diffStart !== -1) {
+            diffs.push({
+                start: diffStart,
+                end: i,
+                expectedChunk: expected.substring(diffStart, i),
+                actualChunk: actual.substring(diffStart, i)
+            });
+        }
+
+        // Merge nearby differences
+        const mergedDiffs = mergeCloseDifferences(diffs, expected, actual);
+
+        // Create summary
+        if (mergedDiffs.length > 0) {
+            summary += `Found ${mergedDiffs.length} difference regions: `;
+            mergedDiffs.forEach((diff, index) => {
+                if (index > 0) summary += " | ";
+                
+                let expectedDisplay = diff.expectedChunk;
+                let actualDisplay = diff.actualChunk;
+                
+                // Truncate very long chunks
+                if (expectedDisplay.length > 50) expectedDisplay = expectedDisplay.substring(0, 20) + "..." + expectedDisplay.substring(expectedDisplay.length - 20);
+                if (actualDisplay.length > 50) actualDisplay = actualDisplay.substring(0, 20) + "..." + actualDisplay.substring(actualDisplay.length - 20);
+                
+                summary += `At position ${diff.start}: Expected "${escapeString(expectedDisplay)}" but got "${escapeString(actualDisplay)}"`;
+                
+                // For very short diffs, add character codes
+                if (diff.expectedChunk.length <= 3 || diff.actualChunk.length <= 3) {
+                    let codes = " [";
+                    for (let i = 0; i < diff.expectedChunk.length; i++) {
+                        if (i > 0) codes += " ";
+                        codes += `U+${diff.expectedChunk.charCodeAt(i).toString(16).padStart(4, '0')}`;
+                    }
+                    codes += " vs ";
+                    for (let i = 0; i < diff.actualChunk.length; i++) {
+                        if (i > 0) codes += " ";
+                        codes += `U+${diff.actualChunk.charCodeAt(i).toString(16).padStart(4, '0')}`;
+                    }
+                    codes += "]";
+                    summary += codes;
+                }
+            });
+        } else if (expected !== actual) {
+            summary += "Strings differ but have no visible differences. Check for invisible characters.";
+        }
+        
+        return summary;
     }
 });
