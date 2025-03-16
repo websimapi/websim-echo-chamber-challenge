@@ -92,6 +92,36 @@ h1 {
     color: #721c24;
 }
 
+.diff-log {
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 10px 0;
+    font-family: monospace;
+    white-space: pre-wrap;
+    text-align: left;
+    overflow-x: auto;
+}
+
+.diff-highlight {
+    padding: 2px;
+    border-radius: 2px;
+}
+
+.diff-added {
+    background-color: #d4edda;
+}
+
+.diff-removed {
+    background-color: #f8d7da;
+}
+
+.diff-summary {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
 .input-area {
     display: flex;
     padding: 10px;

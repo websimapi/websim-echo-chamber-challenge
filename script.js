@@ -147,11 +147,200 @@ document.addEventListener('DOMContentLoaded', () => {
             resultDiv.textContent = ' The LLM failed to echo correctly! You get a point.';
             resultDiv.classList.add('failure');
             
-            // Show the difference for debugging
-            resultDiv.title = `Expected: "${trimmedUserMessage}" | Got: "${trimmedLLMResponse}"`;
+            // Create diff log
+            chatMessages.appendChild(resultDiv);
+            displayDiffLog(trimmedUserMessage, trimmedLLMResponse);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return;
         }
         
         chatMessages.appendChild(resultDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function displayDiffLog(expected, actual) {
+        const diffLogDiv = document.createElement('div');
+        diffLogDiv.className = 'diff-log';
+        
+        // Add summary
+        const summaryDiv = document.createElement('div');
+        summaryDiv.className = 'diff-summary';
+        summaryDiv.textContent = 'Difference Analysis:';
+        diffLogDiv.appendChild(summaryDiv);
+        
+        // Length comparison
+        const lengthDiv = document.createElement('div');
+        lengthDiv.textContent = `Expected length: ${expected.length} | Actual length: ${actual.length}`;
+        diffLogDiv.appendChild(lengthDiv);
+        
+        // Character differences
+        let maxLength = Math.max(expected.length, actual.length);
+        if (maxLength > 500) {
+            // For very long strings, find and show only the differences
+            findAndDisplayDifferences(diffLogDiv, expected, actual);
+        } else {
+            // For shorter strings, show character by character comparison
+            characterByCharacterComparison(diffLogDiv, expected, actual);
+        }
+        
+        chatMessages.appendChild(diffLogDiv);
+    }
+
+    function findAndDisplayDifferences(container, expected, actual) {
+        // Find chunks where differences occur
+        let diffs = [];
+        let i = 0;
+        let matchStartIndex = 0;
+        
+        while (i < expected.length || i < actual.length) {
+            if (i >= expected.length || i >= actual.length || expected[i] !== actual[i]) {
+                // Found a difference, look for next matching chunk
+                let matchFound = false;
+                let j = i + 1;
+                const searchWindow = 20; // How far ahead to look for matches
+                
+                while (!matchFound && j < Math.min(i + searchWindow, Math.max(expected.length, actual.length))) {
+                    if (j < expected.length && j < actual.length && expected[j] === actual[j]) {
+                        // Found a potential match point
+                        let k = 0;
+                        while (j + k < expected.length && 
+                               j + k < actual.length && 
+                               expected[j + k] === actual[j + k] &&
+                               k < 5) { // Ensure we have at least 5 matching chars
+                            k++;
+                        }
+                        if (k >= 5) { // We found a good match point
+                            diffs.push({
+                                expectedStart: i,
+                                expectedEnd: j,
+                                actualStart: i,
+                                actualEnd: j
+                            });
+                            i = j;
+                            matchFound = true;
+                            break;
+                        }
+                    }
+                    j++;
+                }
+                
+                if (!matchFound) {
+                    // If we didn't find a good match point, just advance
+                    i++;
+                }
+            } else {
+                i++;
+            }
+        }
+        
+        // Display context around each difference
+        if (diffs.length === 0 && expected !== actual) {
+            // No specific differences found but strings are different
+            // (might be an issue with invisible characters)
+            const div = document.createElement('div');
+            div.innerHTML = 'Strings differ but no visible differences found. Check for invisible characters.<br>';
+            div.innerHTML += `Expected (escaped): ${escapeString(expected)}<br>`;
+            div.innerHTML += `Actual (escaped): ${escapeString(actual)}`;
+            container.appendChild(div);
+        } else {
+            diffs.forEach(diff => {
+                const contextSize = 10; // Characters of context before and after
+                
+                const expectedStart = Math.max(0, diff.expectedStart - contextSize);
+                const expectedEnd = Math.min(expected.length, diff.expectedEnd + contextSize);
+                const actualStart = Math.max(0, diff.actualStart - contextSize);
+                const actualEnd = Math.min(actual.length, diff.actualEnd + contextSize);
+                
+                const div = document.createElement('div');
+                div.style.marginBottom = '10px';
+                
+                let expectedText = '';
+                if (expectedStart > 0) expectedText += '...';
+                expectedText += expected.substring(expectedStart, diff.expectedStart);
+                expectedText += `<span class="diff-highlight diff-removed">${expected.substring(diff.expectedStart, diff.expectedEnd)}</span>`;
+                expectedText += expected.substring(diff.expectedEnd, expectedEnd);
+                if (expectedEnd < expected.length) expectedText += '...';
+                
+                let actualText = '';
+                if (actualStart > 0) actualText += '...';
+                actualText += actual.substring(actualStart, diff.actualStart);
+                actualText += `<span class="diff-highlight diff-added">${actual.substring(diff.actualStart, diff.actualEnd)}</span>`;
+                actualText += actual.substring(diff.actualEnd, actualEnd);
+                if (actualEnd < actual.length) actualText += '...';
+                
+                div.innerHTML = `<strong>Expected:</strong> ${expectedText}<br><strong>Actual:</strong> ${actualText}`;
+                container.appendChild(div);
+            });
+        }
+    }
+
+    function characterByCharacterComparison(container, expected, actual) {
+        const table = document.createElement('table');
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        
+        // Create header row
+        const headerRow = document.createElement('tr');
+        const indexHeader = document.createElement('th');
+        indexHeader.textContent = 'Index';
+        const expectedHeader = document.createElement('th');
+        expectedHeader.textContent = 'Expected';
+        const actualHeader = document.createElement('th');
+        actualHeader.textContent = 'Actual';
+        
+        headerRow.appendChild(indexHeader);
+        headerRow.appendChild(expectedHeader);
+        headerRow.appendChild(actualHeader);
+        table.appendChild(headerRow);
+        
+        // Create rows for each character
+        for (let i = 0; i < Math.max(expected.length, actual.length); i++) {
+            const row = document.createElement('tr');
+            
+            // Index cell
+            const indexCell = document.createElement('td');
+            indexCell.textContent = i;
+            row.appendChild(indexCell);
+            
+            // Expected character cell
+            const expectedCell = document.createElement('td');
+            if (i < expected.length) {
+                expectedCell.textContent = expected[i] === ' ' ? '␣' : expected[i];
+                expectedCell.title = `Char code: ${expected.charCodeAt(i)}`;
+            } else {
+                expectedCell.textContent = '';
+            }
+            
+            // Actual character cell
+            const actualCell = document.createElement('td');
+            if (i < actual.length) {
+                actualCell.textContent = actual[i] === ' ' ? '␣' : actual[i];
+                actualCell.title = `Char code: ${actual.charCodeAt(i)}`;
+            } else {
+                actualCell.textContent = '';
+            }
+            
+            // Highlight differences
+            if (i >= expected.length) {
+                actualCell.classList.add('diff-added');
+            } else if (i >= actual.length) {
+                expectedCell.classList.add('diff-removed');
+            } else if (expected[i] !== actual[i]) {
+                expectedCell.classList.add('diff-removed');
+                actualCell.classList.add('diff-added');
+            }
+            
+            row.appendChild(expectedCell);
+            row.appendChild(actualCell);
+            table.appendChild(row);
+        }
+        
+        container.appendChild(table);
+    }
+
+    function escapeString(str) {
+        return str.replace(/[^\x20-\x7E]/g, char => {
+            return `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`;
+        });
     }
 });
