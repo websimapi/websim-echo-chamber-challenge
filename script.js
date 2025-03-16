@@ -597,7 +597,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         tabsContainer.appendChild(normalTab);
         tabsContainer.appendChild(hardTab);
-        galleryContainer.insertBefore(tabsContainer, galleryItems.parentElement);
+        galleryContainer.insertBefore(tabsContainer, galleryItems);
         
         // Create toggle button
         const toggleButton = document.createElement('button');
