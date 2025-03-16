@@ -114,7 +114,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const resultDiv = document.createElement('div');
         resultDiv.className = 'result';
         
-        if (userMessage === llmResponse) {
+        // Log values for debugging
+        console.log('User message:', JSON.stringify(userMessage));
+        console.log('LLM response:', JSON.stringify(llmResponse));
+        
+        // Trim both strings to handle potential whitespace issues
+        const trimmedUserMessage = userMessage.trim();
+        const trimmedLLMResponse = llmResponse.trim();
+        
+        if (trimmedUserMessage === trimmedLLMResponse) {
             // LLM succeeded
             llmScore++;
             llmScoreElement.textContent = llmScore;
@@ -126,10 +134,12 @@ document.addEventListener('DOMContentLoaded', () => {
             userScoreElement.textContent = userScore;
             resultDiv.textContent = '✗ The LLM failed to echo correctly! You get a point.';
             resultDiv.classList.add('failure');
+            
+            // Show the difference for debugging
+            resultDiv.title = `Expected: "${trimmedUserMessage}" | Got: "${trimmedLLMResponse}"`;
         }
         
         chatMessages.appendChild(resultDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 });
-
