@@ -103,12 +103,33 @@ document.addEventListener('DOMContentLoaded', () => {
             chatMessages.removeChild(loadingDiv);
             console.error('Error:', error);
 
-            // Display error message
+            // Create retry countdown message
             const errorDiv = document.createElement('div');
             errorDiv.className = 'message llm-message';
-            errorDiv.textContent = 'Error communicating with the LLM.';
+            errorDiv.innerHTML = `Error communicating with the LLM. <span class="retry-countdown">Retrying in 7...</span>`;
+            errorDiv.style.cursor = 'pointer';
             chatMessages.appendChild(errorDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Start countdown and setup retry
+            let countdown = 7;
+            const countdownEl = errorDiv.querySelector('.retry-countdown');
+            
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                countdownEl.textContent = `Retrying in ${countdown}...`;
+                
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    retryLLMRequest(userMessage);
+                }
+            }, 1000);
+            
+            // Allow clicking to retry immediately
+            errorDiv.addEventListener('click', () => {
+                clearInterval(countdownInterval);
+                retryLLMRequest(userMessage);
+            });
         }
     }
 
@@ -132,6 +153,72 @@ document.addEventListener('DOMContentLoaded', () => {
 
         chatMessages.appendChild(messageDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    async function retryLLMRequest(userMessage) {
+        // Show loading indicator
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'message llm-message';
+        loadingDiv.textContent = 'Retrying...';
+        chatMessages.appendChild(loadingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        try {
+            // Send to LLM
+            const completion = await websim.chat.completions.create({
+                messages: [
+                    systemPrompt,
+                    ...conversationHistory
+                ]
+            });
+
+            // Remove loading indicator
+            chatMessages.removeChild(loadingDiv);
+
+            const llmResponse = completion.content;
+
+            // Display LLM response
+            displayMessage(llmResponse, 'llm');
+
+            // Add LLM response to history
+            conversationHistory.push(completion);
+
+            // Check if echo is correct
+            checkEcho(userMessage, llmResponse);
+
+        } catch (error) {
+            // Remove loading indicator
+            chatMessages.removeChild(loadingDiv);
+            console.error('Error:', error);
+
+            // Create retry countdown message
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'message llm-message';
+            errorDiv.innerHTML = `Error communicating with the LLM. <span class="retry-countdown">Retrying in 7...</span>`;
+            errorDiv.style.cursor = 'pointer';
+            chatMessages.appendChild(errorDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Start countdown and setup retry
+            let countdown = 7;
+            const countdownEl = errorDiv.querySelector('.retry-countdown');
+            
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                countdownEl.textContent = `Retrying in ${countdown}...`;
+                
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    retryLLMRequest(userMessage);
+                }
+            }, 1000);
+            
+            // Allow clicking to retry immediately
+            errorDiv.addEventListener('click', () => {
+                clearInterval(countdownInterval);
+                retryLLMRequest(userMessage);
+            });
+        }
     }
 
     function checkEcho(userMessage, llmResponse) {

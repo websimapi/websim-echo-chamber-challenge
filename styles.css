@@ -336,3 +336,9 @@ h1 {
     text-align: right;
     margin-top: 8px;
 }
+
+.retry-countdown {
+    font-weight: bold;
+    color: #4caf50;
+    cursor: pointer;
+}
