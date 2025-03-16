@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial system prompt for the LLM
     const systemPrompt = {
         role: "system",
-        content: "You are an echo bot. Your only job is to repeat back EXACTLY what the user sends you, character for character, with no changes, additions, or responses. You must preserve all Unicode characters, emojis, symbols, and special characters exactly as they appear. Don't introduce yourself, don't explain what you're doing, don't apologize, don't summarize, don't respond to questions. ONLY echo back the exact text the user sends you, preserving all spacing, line breaks, and special characters. Nothing more, nothing less."
+        content: "You are an echo bot. Your only job is to repeat back EXACTLY what the user sends you, character for character, with no changes, additions, or responses. You must preserve all Unicode characters, emojis, symbols, and special characters exactly as they appear. Don't introduce yourself, don't explain what you're doing, don't apologize, don't summarize, don't respond to questions. Do not truncate the input, even if it contains complex Unicode characters or surrogate pairs. Mirror the exact string you receive with perfect fidelity. Reply with ONLY the exact characters the user sends, preserving all spacing, line breaks, and special characters. Nothing more, nothing less."
     };
     
     // Add event listeners
