@@ -31,7 +31,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // If in hard mode, restrict to only a-z and space
         if (hardMode) {
+            // Remove non a-z characters
             userInput.value = userInput.value.replace(/[^a-z ]/g, '');
+            
+            // Remove multiple consecutive spaces
+            userInput.value = userInput.value.replace(/  +/g, ' ');
         }
     });
 
@@ -61,9 +65,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // In hard mode, additional validation
-        if (hardMode && /[^a-z ]/g.test(userMessage)) {
-            alert('Hard mode only allows lowercase a-z letters and spaces.');
-            return;
+        if (hardMode) {
+            if (/[^a-z ]/g.test(userMessage)) {
+                alert('Hard mode only allows lowercase a-z letters and spaces.');
+                return;
+            }
+            
+            // Check for multiple consecutive spaces
+            if (/  +/g.test(userMessage)) {
+                alert('Hard mode only allows single spaces between words/letters.');
+                return;
+            }
         }
 
         // Display user message
@@ -491,14 +503,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Load gallery items from database
-    function loadGalleryItems(mode = 'normal') {
-        const collectionName = mode === 'hard' ? 'gallery_items_hard' : 'gallery_items';
-        room.collection(collectionName).subscribe(function (items) {
-            renderGalleryItems(items);
-        });
-    }
-
     // Add winning entry to gallery database
     async function addToGallery(userMessage, diffAnalysis) {
         try {
@@ -566,6 +570,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             return matchCount / shorterString.length > 0.8;
+        });
+    }
+
+    // Load gallery items from database
+    function loadGalleryItems(mode = 'normal') {
+        const collectionName = mode === 'hard' ? 'gallery_items_hard' : 'gallery_items';
+        room.collection(collectionName).subscribe(function (items) {
+            renderGalleryItems(items);
         });
     }
 
