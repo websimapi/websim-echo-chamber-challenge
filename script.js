@@ -692,10 +692,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 userInput.placeholder = "Hard mode: only a-z and spaces allowed";
                 // Clear input when switching to hard mode
                 userInput.value = userInput.value.replace(/[^a-z ]/g, '');
+                // Update rules text for hard mode
+                document.querySelector('.rules p').innerHTML = "Hard Mode: The LLM must echo back exactly what you type, but you're limited to only lowercase a-z letters and single spaces. No numbers, special characters, or uppercase letters allowed. If the LLM fails to echo your input exactly, you get a point. See if you can trick it with this limited character set!";
             } else {
                 hardModeBtn.classList.remove('active');
                 normalModeBtn.classList.add('active');
                 userInput.placeholder = "Type your message here...";
+                // Restore normal mode rules
+                document.querySelector('.rules p').innerHTML = "The LLM must echo back exactly what you type. If it fails, you get a point. If it succeeds, it gets a point. Try to trick the LLM by using special characters, unusual formatting, or other creative approaches!";
             }
             
             // Update character counter
