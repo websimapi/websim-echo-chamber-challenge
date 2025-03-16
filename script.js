@@ -430,29 +430,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // Setup gallery toggle
     function setupGalleryToggle() {
         const galleryTitle = document.querySelector('.gallery-container h3');
+        const galleryContainer = document.querySelector('.gallery-container');
         
         // Create toggle button
         const toggleButton = document.createElement('button');
         toggleButton.className = 'gallery-toggle';
-        toggleButton.textContent = 'Show'; 
-        toggleButton.style.display = 'inline-block'; 
+        toggleButton.textContent = 'Show';
         galleryTitle.appendChild(toggleButton);
         
         // Create blur overlay
         const blurOverlay = document.createElement('div');
         blurOverlay.className = 'gallery-blur';
-        blurOverlay.style.display = 'flex'; 
         
-        // Create blur message
         const blurMessage = document.createElement('div');
         blurMessage.className = 'gallery-blur-message';
-        blurMessage.textContent = 'Click "Show" to view winning strategies';
+        blurMessage.textContent = 'Click anywhere to view winning strategies';
         
         blurOverlay.appendChild(blurMessage);
         galleryItems.parentElement.appendChild(blurOverlay);
         
-        // Toggle gallery visibility
-        toggleButton.addEventListener('click', () => {
+        // Toggle gallery visibility - on button click
+        toggleButton.addEventListener('click', toggleGallery);
+        
+        // Toggle gallery visibility - on anywhere in gallery clicked
+        blurOverlay.addEventListener('click', toggleGallery);
+        
+        // Toggle function
+        function toggleGallery() {
             if (blurOverlay.style.display === 'none') {
                 blurOverlay.style.display = 'flex';
                 toggleButton.textContent = 'Show';
@@ -460,7 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 blurOverlay.style.display = 'none';
                 toggleButton.textContent = 'Hide';
             }
-        });
+        }
     }
 
     // Render gallery items in UI
