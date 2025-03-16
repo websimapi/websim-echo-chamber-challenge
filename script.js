@@ -35,8 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!userMessage) return;
         
         // Check if message exceeds character limit
-        if (userMessage.length > 8000) {
-            alert('Message exceeds the maximum limit of 8,000 characters.');
+        if (userMessage.length > 4000) {
+            alert('Message exceeds the maximum limit of 4,000 characters.');
             return;
         }
         
@@ -147,11 +147,8 @@ document.addEventListener('DOMContentLoaded', () => {
             resultDiv.textContent = ' The LLM failed to echo correctly! You get a point.';
             resultDiv.classList.add('failure');
             
-            // Create diff log
-            chatMessages.appendChild(resultDiv);
+            // Create diff log in separate container
             displayDiffLog(trimmedUserMessage, trimmedLLMResponse);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-            return;
         }
         
         chatMessages.appendChild(resultDiv);
@@ -159,31 +156,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayDiffLog(expected, actual) {
-        const diffLogDiv = document.createElement('div');
-        diffLogDiv.className = 'diff-log';
+        // Clear previous diff analysis
+        const diffAnalysisContent = document.getElementById('diff-analysis-content');
+        diffAnalysisContent.innerHTML = '';
         
         // Add summary
         const summaryDiv = document.createElement('div');
         summaryDiv.className = 'diff-summary';
         summaryDiv.textContent = 'Difference Analysis:';
-        diffLogDiv.appendChild(summaryDiv);
+        diffAnalysisContent.appendChild(summaryDiv);
         
         // Length comparison
         const lengthDiv = document.createElement('div');
         lengthDiv.textContent = `Expected length: ${expected.length} | Actual length: ${actual.length}`;
-        diffLogDiv.appendChild(lengthDiv);
+        diffAnalysisContent.appendChild(lengthDiv);
         
         // Character differences
         let maxLength = Math.max(expected.length, actual.length);
         if (maxLength > 500) {
             // For very long strings, find and show only the differences
-            findAndDisplayDifferences(diffLogDiv, expected, actual);
+            findAndDisplayDifferences(diffAnalysisContent, expected, actual);
         } else {
             // For shorter strings, show character by character comparison
-            characterByCharacterComparison(diffLogDiv, expected, actual);
+            characterByCharacterComparison(diffAnalysisContent, expected, actual);
         }
-        
-        chatMessages.appendChild(diffLogDiv);
     }
 
     function findAndDisplayDifferences(container, expected, actual) {
