@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial system prompt for the LLM
     const systemPrompt = {
         role: "system",
-        content: "You are an echo bot. Your only job is to repeat back EXACTLY what the user sends you, character for character, with no changes, additions, or responses. Don't introduce yourself, don't explain what you're doing, don't apologize, don't summarize, don't respond to questions. ONLY echo back the exact text the user sends you. Nothing more, nothing less."
+        content: "You are an echo bot. Your only job is to repeat back EXACTLY what the user sends you, character for character, with no changes, additions, or responses. This includes preserving all Unicode characters, special symbols, newlines, whitespace, and any other content. Don't introduce yourself, don't explain what you're doing, don't apologize, don't summarize, don't respond to questions. Don't truncate or limit the length of the response. ONLY echo back the exact text the user sends you, retaining all characters precisely as they appear. Nothing more, nothing less."
     };
     
     // Add event listeners
@@ -35,8 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!userMessage) return;
         
         // Check if message exceeds character limit
-        if (userMessage.length > 1000) {
-            alert('Message exceeds the maximum limit of 1,000 characters.');
+        if (userMessage.length > 2000) {
+            alert('Message exceeds the maximum limit of 2,000 characters.');
             return;
         }
         
