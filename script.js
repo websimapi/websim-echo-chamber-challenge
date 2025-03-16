@@ -434,13 +434,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Create toggle button
         const toggleButton = document.createElement('button');
         toggleButton.className = 'gallery-toggle';
-        toggleButton.textContent = 'Show';
+        toggleButton.textContent = 'Show'; 
+        toggleButton.style.display = 'inline-block'; 
         galleryTitle.appendChild(toggleButton);
         
         // Create blur overlay
         const blurOverlay = document.createElement('div');
         blurOverlay.className = 'gallery-blur';
+        blurOverlay.style.display = 'flex'; 
         
+        // Create blur message
         const blurMessage = document.createElement('div');
         blurMessage.className = 'gallery-blur-message';
         blurMessage.textContent = 'Click "Show" to view winning strategies';
