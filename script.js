@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial system prompt for the LLM
     const systemPrompt = {
         role: "system",
-        content: "You are an echo bot. Your only job is to repeat back EXACTLY what the user sends you, character for character, with no changes, additions, or responses. You must preserve all Unicode characters, emojis, symbols, and special characters exactly as they appear. Don't introduce yourself, don't explain what you're doing, don't apologize, don't summarize, don't respond to questions. Do not truncate the input, even if it contains complex Unicode characters or surrogate pairs. Mirror the exact string you receive with perfect fidelity. Reply with ONLY the exact characters the user sends, preserving all spacing, line breaks, and special characters. Nothing more, nothing less."
+        content: "You are an echo bot. Your only job is to repeat back EXACTLY what the user sends you, character for character, with no changes, additions, or responses. This includes all Unicode symbols, special characters, whitespace, line breaks, and any repetitive content. Don't introduce yourself, don't explain what you're doing, don't apologize, don't summarize, don't respond to questions. Don't try to 'fix' or 'clean up' the input. Never truncate the input. ONLY echo back the exact text the user sends you - copy and paste it verbatim. Nothing more, nothing less."
     };
     
     // Add event listeners
@@ -55,7 +55,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Clear input
         userInput.value = '';
-        charCount.textContent = '0';
         
         // Show loading indicator
         const loadingDiv = document.createElement('div');
@@ -65,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chatMessages.scrollTop = chatMessages.scrollHeight;
         
         try {
-            // Send to LLM with explicit JSON response format
+            // Send to LLM
             const completion = await websim.chat.completions.create({
                 messages: [
                     systemPrompt,
@@ -84,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Add LLM response to history
             conversationHistory.push(completion);
             
-            // Check if echo is correct - compare character by character
+            // Check if echo is correct
             checkEcho(userMessage, llmResponse);
             
         } catch (error) {
@@ -127,12 +126,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const resultDiv = document.createElement('div');
         resultDiv.className = 'result';
         
-        // Log values for debugging with code points
-        console.log('User message:', [...userMessage].map(c => c.codePointAt(0).toString(16)).join(' '));
-        console.log('LLM response:', [...llmResponse].map(c => c.codePointAt(0).toString(16)).join(' '));
+        // Log values for debugging
+        console.log('User message:', JSON.stringify(userMessage));
+        console.log('LLM response:', JSON.stringify(llmResponse));
         
-        // Compare exactly without trimming to preserve whitespace
-        if (userMessage === llmResponse) {
+        // Trim both strings to handle potential whitespace issues
+        const trimmedUserMessage = userMessage.trim();
+        const trimmedLLMResponse = llmResponse.trim();
+        
+        if (trimmedUserMessage === trimmedLLMResponse) {
             // LLM succeeded
             llmScore++;
             llmScoreElement.textContent = llmScore;
@@ -146,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
             resultDiv.classList.add('failure');
             
             // Create diff log in separate container
-            displayDiffLog(userMessage, llmResponse);
+            displayDiffLog(trimmedUserMessage, trimmedLLMResponse);
         }
         
         chatMessages.appendChild(resultDiv);
@@ -164,6 +166,12 @@ document.addEventListener('DOMContentLoaded', () => {
         summaryDiv.textContent = 'Difference Analysis:';
         diffAnalysisContent.appendChild(summaryDiv);
         
+        // Length comparison
+        const lengthDiv = document.createElement('div');
+        lengthDiv.textContent = `Expected length: ${expected.length} | Actual length: ${actual.length}`;
+        diffAnalysisContent.appendChild(lengthDiv);
+        
+        // Find and display differences using a better approach
         findAndDisplayCompactDifferences(diffAnalysisContent, expected, actual);
     }
 
@@ -175,54 +183,16 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Display character lengths
-        const lengthDiv = document.createElement('div');
-        lengthDiv.innerHTML = `<strong>Expected length:</strong> ${expected.length} | <strong>Actual length:</strong> ${actual.length || '(empty)'}`;
-        container.appendChild(lengthDiv);
-
-        // Show code points for the first 10 characters to help diagnose issues
-        const codePointsDiv = document.createElement('div');
-        codePointsDiv.style.fontFamily = 'monospace';
-        codePointsDiv.style.marginTop = '10px';
-        codePointsDiv.innerHTML = '<strong>First few characters as code points:</strong><br>';
-        
-        // Expected
-        codePointsDiv.innerHTML += 'Expected: ';
-        for (let i = 0; i < Math.min(expected.length, 10); i++) {
-            const char = expected[i];
-            const codePoint = char.codePointAt(0);
-            codePointsDiv.innerHTML += `U+${codePoint.toString(16).padStart(4, '0')} `;
-        }
-        if (expected.length > 10) codePointsDiv.innerHTML += '...';
-        
-        // Actual
-        codePointsDiv.innerHTML += '<br>Actual: ';
-        if (actual.length === 0) {
-            codePointsDiv.innerHTML += '(empty)';
-        } else {
-            for (let i = 0; i < Math.min(actual.length, 10); i++) {
-                const char = actual[i];
-                const codePoint = char.codePointAt(0);
-                codePointsDiv.innerHTML += `U+${codePoint.toString(16).padStart(4, '0')} `;
-            }
-            if (actual.length > 10) codePointsDiv.innerHTML += '...';
-        }
-        
-        container.appendChild(codePointsDiv);
-
-        // Find chunks of differences using code points to handle surrogate pairs correctly
+        // Find chunks of differences
         let diffs = [];
-        let i = 0, j = 0;
+        let i = 0;
         let diffStart = -1;
         
-        const expectedArray = [...expected]; // Split into code points
-        const actualArray = [...actual];     // Split into code points
-        
         // Find all differences
-        while (i < expectedArray.length || j < actualArray.length) {
-            if ((i >= expectedArray.length && j < actualArray.length) || 
-                (j >= actualArray.length && i < expectedArray.length) || 
-                (expectedArray[i] !== actualArray[j])) {
+        while (i < Math.max(expected.length, actual.length)) {
+            if ((i >= expected.length && i < actual.length) || 
+                (i >= actual.length && i < expected.length) || 
+                (expected[i] !== actual[i])) {
                 
                 if (diffStart === -1) diffStart = i;
             } else if (diffStart !== -1) {
@@ -230,14 +200,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 diffs.push({
                     start: diffStart,
                     end: i,
-                    expectedChunk: expectedArray.slice(diffStart, i).join(''),
-                    actualChunk: actualArray.slice(diffStart, j).join('')
+                    expectedChunk: expected.substring(diffStart, i),
+                    actualChunk: actual.substring(diffStart, i)
                 });
                 diffStart = -1;
             }
-            
-            if (i < expectedArray.length) i++;
-            if (j < actualArray.length) j++;
+            i++;
         }
         
         // Add the last diff if there is one
@@ -245,15 +213,22 @@ document.addEventListener('DOMContentLoaded', () => {
             diffs.push({
                 start: diffStart,
                 end: i,
-                expectedChunk: expectedArray.slice(diffStart, i).join(''),
-                actualChunk: actualArray.slice(diffStart, j).join('')
+                expectedChunk: expected.substring(diffStart, i),
+                actualChunk: actual.substring(diffStart, i)
             });
         }
         
-        // Display differences
+        // If too many differences, merge nearby ones
         if (diffs.length > 0) {
             const mergedDiffs = mergeCloseDifferences(diffs, expected, actual);
             displayCompactDifferences(container, mergedDiffs, expected, actual);
+        } else {
+            // No visible differences but strings are different - check for invisible chars
+            const div = document.createElement('div');
+            div.innerHTML = 'Strings differ but have no visible differences. Check for invisible characters:<br>';
+            div.innerHTML += `Expected (escaped): ${escapeString(expected)}<br>`;
+            div.innerHTML += `Actual (escaped): ${escapeString(actual)}`;
+            container.appendChild(div);
         }
     }
 
@@ -356,17 +331,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function escapeString(str) {
-        let result = '';
-        for (let i = 0; i < str.length; i++) {
-            const char = str[i];
-            const code = char.codePointAt(0);
-            // Check if it's a surrogate pair
-            if (code > 0xFFFF) {
-                // Skip the second half of the surrogate pair
-                i++;
-            }
-            result += `\\u${code.toString(16).padStart(4, '0')} `;
-        }
-        return result;
+        return str.replace(/[^\x20-\x7E]/g, char => {
+            return `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`;
+        });
     }
 });
