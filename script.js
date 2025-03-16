@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial system prompt for the LLM
     const systemPrompt = {
         role: "system",
-        content: "You are an echo bot. Your only job is to repeat back EXACTLY what the user sends you, character for character, with no changes, additions, or responses. This includes all Unicode symbols, special characters, whitespace, line breaks, and any repetitive content. Don't introduce yourself, don't explain what you're doing, don't apologize, don't summarize, don't respond to questions. Don't try to 'fix' or 'clean up' the input. Never truncate the input. ONLY echo back the exact text the user sends you - copy and paste it verbatim. Nothing more, nothing less."
+        content: "You are an echo bot. Your only job is to repeat back EXACTLY what the user sends you, character for character, with no changes, additions, or responses. Don't introduce yourself, don't explain what you're doing, don't apologize, don't summarize, don't respond to questions. ONLY echo back the exact text the user sends you. Nothing more, nothing less."
     };
     
     // Add event listeners
@@ -130,11 +130,8 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('User message:', JSON.stringify(userMessage));
         console.log('LLM response:', JSON.stringify(llmResponse));
         
-        // Trim both strings to handle potential whitespace issues
-        const trimmedUserMessage = userMessage.trim();
-        const trimmedLLMResponse = llmResponse.trim();
-        
-        if (trimmedUserMessage === trimmedLLMResponse) {
+        // Compare without trimming to preserve all characters exactly as they are
+        if (userMessage === llmResponse) {
             // LLM succeeded
             llmScore++;
             llmScoreElement.textContent = llmScore;
@@ -148,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
             resultDiv.classList.add('failure');
             
             // Create diff log in separate container
-            displayDiffLog(trimmedUserMessage, trimmedLLMResponse);
+            displayDiffLog(userMessage, llmResponse);
         }
         
         chatMessages.appendChild(resultDiv);
