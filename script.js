@@ -13,9 +13,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let userScore = 0;
     let llmScore = 0;
     let conversationHistory = [];
+    let localWinningInputs = JSON.parse(localStorage.getItem('winningInputs') || '[]');
 
     // Load gallery items on page load
     loadGalleryItems();
+
+    // Setup gallery toggle
+    setupGalleryToggle();
 
     // Update character count
     userInput.addEventListener('input', () => {
@@ -364,6 +368,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add winning entry to gallery database
     async function addToGallery(userMessage, diffAnalysis) {
         try {
+            // Check if similar message exists in local winning inputs
+            if (isSimilarToExistingWins(userMessage)) {
+                const warningDiv = document.createElement('div');
+                warningDiv.className = 'result';
+                warningDiv.textContent = 'Similar winning input already exists. Try something more unique!';
+                warningDiv.style.backgroundColor = '#fff3cd';
+                warningDiv.style.color = '#856404';
+                chatMessages.appendChild(warningDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                return;
+            }
+
+            // Store in local storage
+            localWinningInputs.push(userMessage);
+            localStorage.setItem('winningInputs', JSON.stringify(localWinningInputs));
+
+            // Add to database
             await room.collection('gallery_items').create({
                 message: userMessage,
                 diffAnalysis: diffAnalysis
@@ -373,10 +394,69 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Check if message is similar to existing wins
+    function isSimilarToExistingWins(message) {
+        return localWinningInputs.some(winningMessage => {
+            // Simple similarity check - if more than 80% similar
+            const longerString = message.length > winningMessage.length ? message : winningMessage;
+            const shorterString = message.length > winningMessage.length ? winningMessage : message;
+            
+            // If strings are too different in length, they're not similar
+            if (shorterString.length < longerString.length * 0.7) return false;
+            
+            // Check for direct substring match (for small messages)
+            if (shorterString.length < 10) {
+                return longerString.includes(shorterString);
+            }
+            
+            // For longer strings, check for similarity based on character count
+            let matchCount = 0;
+            for (let i = 0; i < shorterString.length; i++) {
+                if (longerString.includes(shorterString[i])) {
+                    matchCount++;
+                }
+            }
+            return matchCount / shorterString.length > 0.8;
+        });
+    }
+
     // Load gallery items from database
     function loadGalleryItems() {
         room.collection('gallery_items').subscribe(function (items) {
             renderGalleryItems(items);
+        });
+    }
+
+    // Setup gallery toggle
+    function setupGalleryToggle() {
+        const galleryTitle = document.querySelector('.gallery-container h3');
+        
+        // Create toggle button
+        const toggleButton = document.createElement('button');
+        toggleButton.className = 'gallery-toggle';
+        toggleButton.textContent = 'Show';
+        galleryTitle.appendChild(toggleButton);
+        
+        // Create blur overlay
+        const blurOverlay = document.createElement('div');
+        blurOverlay.className = 'gallery-blur';
+        
+        const blurMessage = document.createElement('div');
+        blurMessage.className = 'gallery-blur-message';
+        blurMessage.textContent = 'Click "Show" to view winning strategies';
+        
+        blurOverlay.appendChild(blurMessage);
+        galleryItems.parentElement.appendChild(blurOverlay);
+        
+        // Toggle gallery visibility
+        toggleButton.addEventListener('click', () => {
+            if (blurOverlay.style.display === 'none') {
+                blurOverlay.style.display = 'flex';
+                toggleButton.textContent = 'Show';
+            } else {
+                blurOverlay.style.display = 'none';
+                toggleButton.textContent = 'Hide';
+            }
         });
     }
 
